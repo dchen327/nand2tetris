@@ -43,23 +43,27 @@ CHIP ALU {
 
     PARTS:
    // Put you code here:
-    Mux16(a=x, b[0..15]=false, sel=zx, out=zdx); // Zero x
-    Not16(in=zdx, out=notx); // !x
-    Mux16(a=zdx, b=notx, sel=nx, out=ndx); // pick x or !x
-    Mux16(a=y, b[0..15]=false, sel=zy, out=zdy); // Zero y
-    Not16(in=zdy, out=noty); // !y
-    Mux16(a=zdy, b=noty, sel=ny, out=ndy); // pick y or !y
+    Mux16(a=x, b[0..15]=false, sel=zx, out=x1); // Zero x
+    Not16(in=x1, out=notx); // !x
+    Mux16(a=x1, b=notx, sel=nx, out=x2); // pick x or !x
 
-    Add16(a=ndx, b=ndy, out=xplusy);
-    And16(a=ndx, b=ndy, out=xandy);
-    Mux16(a=xplusy, b=xandy, sel=f, out=fxy); // pick based on f
+    Mux16(a=y, b[0..15]=false, sel=zy, out=y1); // Zero y
+    Not16(in=y1, out=noty); // !y
+    Mux16(a=y1, b=noty, sel=ny, out=y2); // pick y or !y
+
+    Add16(a=x2, b=y2, out=xplusy);
+    And16(a=x2, b=y2, out=xandy);
+    Mux16(a=xandy, b=xplusy, sel=f, out=fxy); // pick based on f
 
     Not16(in=fxy, out=nfxy); // !output
-    Mux16(a=fxy, b=nfxy, sel=no, out=oo);
+    Mux16(a=fxy, b=nfxy, sel=no, out=out, out[15]=firstOut, out[0..7]=finalLeft, out[8..15]=finalRight);
 
-    Or16Way(in=oo, out=o);
-    Not(in=o, out=zr); // zr
+    // output == 0 (zr)
+    Or8Way(in=finalLeft, out=zrl);
+    Or8Way(in=finalRight, out=zrr);
+    Or(a=zrl, b=zrr, out=nzr);
+    Not(in=nzr, out=zr);
 
-    And16(a[0..15]=true, b=oo, out[15]=ng, out[0..14]=drop); // ng
-    Or16(a=oo, b[0..15]=false, out=out); // output
+    // output < 0 (ng)
+    And(a=firstOut, b=true, out=ng);
 }
